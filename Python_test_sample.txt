@@ -1,0 +1,69 @@
+python mockの使い方
+
+◆まとめサイト
+https://kokiblog.com/2020/01/26/python_mock/#toc10
+
+◆使用例（キヤノン案件のコード）
+	◆インポート
+	from unittest.mock import patch
+
+	◆条件分岐で処理を変更したい時
+	＠patch(～）の括弧の中身のメソッドを置き換えている
+	引数の値ごとに処理を分けたい時などに使用
+
+	例：
+	@patch('mng_cmn.group.GroupCmn.query_sub_group_to_dynamo')
+	# 引数には＠patch(～)で指定した関数を引数として渡す（今回の場合だとpre）
+	def test_005(self, pre):
+	    """
+	    異常系テスト　Dynamo　サブグループ情報取得失敗
+	    """
+	    event = self.create_get_user_list_event()
+
+	    def _query_sub_group_to_dynamo(group_id):
+	        if group_id == self.group_id_list[0]:
+	            raise CmnException(ecs.AWS_DYNAMO_NOT_FOUND_DATA_ERROR)
+	        else:
+	            return []
+
+	    pre.side_effect = _query_sub_group_to_dynamo
+
+	    try:
+	        result = get_user_list.lambda_handler(event, test_object.context)
+
+	        # ステータス：500が返却されること
+	        self.assertEqual("500", result.get("statusCode"))
+	        # レスポンスボディ確認
+	        response_body = json.loads(result["body"])
+
+	        self.assertEqual(ecs.AWS_DYNAMO_NOT_FOUND_DATA_ERROR, response_body["error_code"])
+
+	    except Exception as e1:
+	        self.assertFalse(True)
+
+
+	◆MagicMockを使用するパターン
+	そのメソッドを実行したら、エラーを発生させたいなどの時に使用
+	with patch～の一文で記述することが可能
+
+	例：
+	def test_009(self):
+	    """
+	    異常系テスト(DBクエリ時にDynamoDBでエラー)
+	    """
+	    event = self.create_delete_image_event(sub_group_id=self.sub_group_id_list[0],
+	                                            user_id=self.user_id_list[0],
+	                                            clipping_id=self.clipping_id_list[0]
+	                                            )
+
+	    with patch('clp_cmn.clipping.ClippingCmn.get_clipping_record',
+	                MagicMock(side_effect=CmnException(c_ecs.GET_CLIPPING_RECORD_ERROR))):
+
+	        # 実行(DynamoDBでExceptionが発生)
+	        result = delete_images.lambda_handler(event, test_object.context)
+	        res_body = json.loads(result.get("body"))
+
+	    # 検証
+	    # ステータス：500が返却されること
+	    self.assertEqual("500", result.get("statusCode"))
+	    self.assertEqual(c_ecs.GET_CLIPPING_RECORD_ERROR, res_body.get("error_code"))
