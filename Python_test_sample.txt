@@ -67,3 +67,64 @@ https://kokiblog.com/2020/01/26/python_mock/#toc10
 	    # ステータス：500が返却されること
 	    self.assertEqual("500", result.get("statusCode"))
 	    self.assertEqual(c_ecs.GET_CLIPPING_RECORD_ERROR, res_body.get("error_code"))
+
+	◆HTTPレスポンスをmockする場合
+	レスポンスのモッククラスを作成し、side_effectで定義する。
+　　　　リストに格納してレスポンスを複数格納することもできる。 
+	例：
+	def test_001(self):
+        """
+        正常系
+        """
+	class MockResponse:
+    	　def __init__(self, text, status_code, headers):
+  　      　self.text = text
+　        　self.status_code = status_code
+    　    　self.headers = headers
+
+	  def json(self):
+　　        return json.loads(self.text)
+	
+
+	body_mock = json.dumps(
+            {
+                "header": {
+                    "result_datetime": "2021/01/22 14:08:58.039",
+                    "result_code": "200",
+                    "error_type": "",
+                    "result_message": ""
+                },
+                "body": {
+                    "epaldd_using_list": [
+                        {
+                            "partner_base_code": self.location_list[0][User.LOCATION_CODE],
+                            "partner_base_name": self.location_list[0][User.LOCATION_NAME],
+                            "epaldd_using_flag": 1,
+                            "delete_flag": 0
+                        },
+                        {
+                            "partner_base_code": self.location_list[1][User.LOCATION_CODE],
+                            "partner_base_name": self.location_list[1][User.LOCATION_NAME],
+                            "epaldd_using_flag": 0,
+                            "delete_flag": 0
+                        },
+                        {
+                            "partner_base_code": self.location_list[2][User.LOCATION_CODE],
+                            "partner_base_name": self.location_list[2][User.LOCATION_NAME],
+                            "epaldd_using_flag": 1,
+                            "delete_flag": 1
+                        }
+                    ]
+                }
+            })
+
+        try:
+            event = self.create_get_location_event()
+
+            with patch('requests.Session.request') as m:
+                m.side_effect = [MockResponsebody_mock, 200, {}), MockResponsebody_mock, 200, {})]
+                result = get_location.lambda_handler(event, lambda_context.context)
+
+
+
+
